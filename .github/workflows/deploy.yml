@@ -1,0 +1,69 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  test-and-build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: src/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd src
+          npm ci
+
+      - name: Run Basic Health Syntax Check
+        run: |
+          cd src
+          node -c server.js
+
+      - name: Build Docker Image
+        run: |
+          cd src
+          docker build -t cloudmart-app:latest .
+
+  deploy:
+    name: Deploy to Private EC2 via Bastion
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH Jump Proxy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.APP_SERVER_PRIVATE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.BASTION_PUBLIC_IP }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/cloud-secure-web-app/src
+            git pull origin main
+            docker build -t cloudmart:latest .
+            docker stop cloudmart || true
+            docker rm cloudmart || true
+            docker run -d \
+              --name cloudmart \
+              --restart always \
+              -p 127.0.0.1:3000:3000 \
+              --env-file /home/ubuntu/.env \
+              cloudmart:latest
