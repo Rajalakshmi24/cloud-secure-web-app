@@ -295,6 +295,7 @@ resource "aws_instance" "app_server" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t3.micro"
   subnet_id              = aws_subnet.private_app_1.id
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
   vpc_security_group_ids = [aws_security_group.app_sg.id]
   key_name               = var.key_pair_name
 
@@ -363,4 +364,34 @@ resource "aws_instance" "bastion" {
   tags = {
     Name = "cloudmart-bastion-host"
   }
+}
+
+# 1. IAM Role for EC2
+resource "aws_iam_role" "ec2_cloudwatch_role" {
+  name = "cloudmart-ec2-cloudwatch-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# 2. Attach CloudWatchAgentServerPolicy to the Role
+resource "aws_iam_role_policy_attachment" "cw_agent_policy" {
+  role       = aws_iam_role.ec2_cloudwatch_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# 3. Create Instance Profile
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "cloudmart-ec2-instance-profile"
+  role = aws_iam_role.ec2_cloudwatch_role.name
 }
