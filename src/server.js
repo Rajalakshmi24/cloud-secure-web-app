@@ -79,6 +79,38 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>CloudMart - DevSecOps Web App</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #0f172a; color: #f8fafc; }
+        .card { background: #1e293b; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 500px; text-align: center; border: 1px solid #334155; }
+        h1 { color: #38bdf8; margin-bottom: 0.5rem; }
+        p { color: #94a3b8; font-size: 1rem; line-height: 1.5; }
+        .badge { display: inline-block; background: #0284c7; color: white; padding: 4px 12px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }
+        .links a { display: inline-block; margin: 0.5rem; color: #38bdf8; text-decoration: none; border: 1px solid #38bdf8; padding: 6px 14px; border-radius: 6px; font-size: 0.9rem; }
+        .links a:hover { background: #38bdf8; color: #0f172a; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <span class="badge">AWS Cloud & DevSecOps Live</span>
+        <h1>CloudMart E-Commerce</h1>
+        <p>A secure, containerized web application deployed on AWS private subnets behind an Application Load Balancer.</p>
+        <div class="links">
+          <a href="/health">Health Status</a>
+          <a href="/api/products">Products API</a>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 // ----------------- System & Health Routes -----------------
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
